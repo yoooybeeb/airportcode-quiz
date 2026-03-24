@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANA空港コードクイズ</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; text-align: center; background: #e6effa; margin: 0; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); width: 100%; max-width: 350px; margin: auto; position: relative; overflow: hidden; }
+        h1 { color: #003194; font-size: 1.4rem; margin-top: 0; border-bottom: 2px solid #003194; padding-bottom: 10px; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; }
+        select { padding: 8px; border-radius: 8px; border: 1px solid #ccc; flex: 1; font-size: 0.8rem; }
+        .question { font-size: 2.2rem; font-weight: bold; margin: 15px 0; color: #333; min-height: 3.5rem; display: flex; align-items: center; justify-content: center; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        /* ボタンの基本スタイル */
+        button.option-btn { padding: 15px 10px; border: 2px solid #003194; border-radius: 12px; background: white; color: #003194; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        
+        /* 正解・不正解の時の色付け */
+        button.correct { background-color: #4CAF50 !important; color: white !important; border-color: #4CAF50 !important; }
+        button.wrong { background-color: #f44336 !important; color: white !important; border-color: #f44336 !important; }
+        
+        .result-msg { height: 1.5rem; margin-top: 15px; font-weight: bold; font-size: 1.1rem; }
+        .score { margin-top: 10px; font-size: 0.9rem; color: #666; }
+        #startBtn { background: #003194; color: white; width: 100%; padding: 15px; border-radius: 12px; font-size: 1.2rem; border: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>ANA Code Quiz</h1>
+    
+    <div id="startArea">
+        <p>ANAグループ就航地<br>3レター暗記アプリ</p>
+        <button id="startBtn" onclick="startQuiz()">クイズ開始！</button>
+    </div>
+
+    <div id="quizArea" style="display:none;">
+        <div class="nav">
+            <select id="categorySelect" onchange="nextQuestion()">
+                <option value="all">全空港</option>
+                <option value="domestic">国内線</option>
+                <option value="international">国際線</option>
+            </select>
+            <select id="modeSelect" onchange="nextQuestion()">
+                <option value="toCode">名 → コード</option>
+                <option value="toName">コード → 名</option>
+            </select>
+        </div>
+
+        <div class="question" id="questionText">---</div>
+        <div class="options-grid" id="options"></div>
+        <div class="result-msg" id="resultMsg"></div>
+        <div class="score">現在のスコア: <span id="scoreCount">0</span></div>
+    </div>
+</div>
+
+<script>
+const data = [
+    // 国内
+    {n:"稚内", c:"WKJ", t:"domestic"}, {n:"オホーツク紋別", c:"MBE", t:"domestic"}, {n:"釧路", c:"KUH", t:"domestic"}, {n:"帯広", c:"OBO", t:"domestic"}, {n:"札幌(千歳)", c:"CTS", t:"domestic"}, {n:"秋田", c:"AXT", t:"domestic"}, {n:"庄内", c:"SYO", t:"domestic"}, {n:"福島", c:"FKS", t:"domestic"}, {n:"東京(成田)", c:"NRT", t:"domestic"}, {n:"富山", c:"TOY", t:"domestic"}, {n:"能登", c:"NTQ", t:"domestic"}, {n:"中部", c:"NGO", t:"domestic"}, {n:"大阪(伊丹)", c:"ITM", t:"domestic"}, {n:"神戸", c:"UKB", t:"domestic"}, {n:"鳥取", c:"TTJ", t:"domestic"}, {n:"石見", c:"IWJ", t:"domestic"}, {n:"広島", c:"HIJ", t:"domestic"}, {n:"高松", c:"TAK", t:"domestic"}, {n:"高知", c:"KCZ", t:"domestic"}, {n:"福岡", c:"FUK", t:"domestic"}, {n:"佐賀", c:"HSG", t:"domestic"}, {n:"対馬", c:"TSJ", t:"domestic"}, {n:"壱岐", c:"IKI", t:"domestic"}, {n:"宮崎", c:"KMI", t:"domestic"}, {n:"鹿児島", c:"KOJ", t:"domestic"}, {n:"石垣", c:"ISG", t:"domestic"}, {n:"函館", c:"HKD", t:"domestic"}, {n:"女満別", c:"MMB", t:"domestic"}, {n:"根室中標津", c:"SHB", t:"domestic"}, {n:"旭川", c:"AKJ", t:"domestic"}, {n:"青森", c:"AOJ", t:"domestic"}, {n:"大館能代", c:"ONJ", t:"domestic"}, {n:"仙台", c:"SDJ", t:"domestic"}, {n:"八丈島", c:"HAC", t:"domestic"}, {n:"東京(羽田)", c:"HND", t:"domestic"}, {n:"新潟", c:"KIJ", t:"domestic"}, {n:"小松", c:"KMQ", t:"domestic"}, {n:"静岡", c:"FSZ", t:"domestic"}, {n:"関西", c:"KIX", t:"domestic"}, {n:"米子", c:"YGJ", t:"domestic"}, {n:"岡山", c:"OKJ", t:"domestic"}, {n:"岩国", c:"IWK", t:"domestic"}, {n:"山口宇部", c:"UBJ", t:"domestic"}, {n:"徳島", c:"TKS", t:"domestic"}, {n:"松山", c:"MYJ", t:"domestic"}, {n:"北九州", c:"KKJ", t:"domestic"}, {n:"長崎", c:"NGS", t:"domestic"}, {n:"福江(五島)", c:"FUJ", t:"domestic"}, {n:"大分", c:"OIT", t:"domestic"}, {n:"熊本", c:"KMJ", t:"domestic"}, {n:"沖縄(那覇)", c:"OKA", t:"domestic"}, {n:"宮古", c:"MMY", t:"domestic"},
+    // 海外
+    {n:"ワシントン", c:"IAD", t:"international"}, {n:"ロサンゼルス", c:"LAX", t:"international"}, {n:"サンフランシスコ", c:"SFO", t:"international"}, {n:"シアトル", c:"SEA", t:"international"}, {n:"バンクーバー", c:"YVR", t:"international"}, {n:"メキシコ", c:"MEX", t:"international"}, {n:"ストックホルム", c:"ARN", t:"international"}, {n:"ロンドン", c:"LHR", t:"international"}, {n:"デュッセルドルフ", c:"DUS", t:"international"}, {n:"ブリュッセル", c:"BRU", t:"international"}, {n:"イスタンブール", c:"IST", t:"international"}, {n:"シドニー", c:"SYD", t:"international"}, {n:"パース", c:"PER", t:"international"}, {n:"香港", c:"HKG", t:"international"}, {n:"バンコク", c:"BKK", t:"international"}, {n:"マニラ", c:"MNL", t:"international"}, {n:"ホーチミン", c:"SGN", t:"international"}, {n:"クアラルンプール", c:"KUL", t:"international"}, {n:"北京", c:"PEK", t:"international"}, {n:"広州", c:"CAN", t:"international"}, {n:"成都", c:"CTU", t:"international"}, {n:"瀋陽", c:"SHE", t:"international"}, {n:"上海(虹橋)", c:"SHA", t:"international"}, {n:"武漢", c:"WUH", t:"international"}, {n:"ソウル(金浦)", c:"GMP", t:"international"}, {n:"台北(桃園)", c:"TPE", t:"international"}, {n:"ニューヨーク", c:"JFK", t:"international"}, {n:"シカゴ", c:"ORD", t:"international"}, {n:"サンノゼ", c:"SJC", t:"international"}, {n:"ヒューストン", c:"IAH", t:"international"}, {n:"ホノルル", c:"HNL", t:"international"}, {n:"フランクフルト", c:"FRA", t:"international"}, {n:"ミュンヘン", c:"MUC", t:"international"}, {n:"パリ", c:"CDG", t:"international"}, {n:"ミラノ", c:"MXP", t:"international"}, {n:"ウィーン", c:"VIE", t:"international"}, {n:"デリー", c:"DEL", t:"international"}, {n:"ムンバイ", c:"BOM", t:"international"}, {n:"シンガポール", c:"SIN", t:"international"}, {n:"ジャカルタ", c:"CGK", t:"international"}, {n:"ヤンゴン", c:"RGN", t:"international"}, {n:"ハノイ", c:"HAN", t:"international"}, {n:"プノンペン", c:"KTI", t:"international"}, {n:"大連", c:"DLC", t:"international"}, {n:"杭州", c:"HGH", t:"international"}, {n:"青島", c:"TAO", t:"international"}, {n:"厦門", c:"XMN", t:"international"}, {n:"上海(浦東)", c:"PVG", t:"international"}, {n:"天津", c:"TSN", t:"international"}, {n:"ソウル(仁川)", c:"ICN", t:"international"}, {n:"台北(松山)", c:"TSA", t:"international"}, {n:"深圳", c:"SZX", t:"international"}
+];
+
+let score = 0;
+let currentQuestion = {};
+let isAnswering = false;
+
+function startQuiz() {
+    document.getElementById('startArea').style.display = 'none';
+    document.getElementById('quizArea').style.display = 'block';
+    nextQuestion();
+}
+
+function nextQuestion() {
+    isAnswering = false;
+    document.getElementById('resultMsg').innerText = "";
+    document.getElementById('resultMsg').style.color = "black";
+    
+    const cat = document.getElementById('categorySelect').value;
+    const mode = document.getElementById('modeSelect').value;
+    
+    let list = cat === 'all' ? data : data.filter(item => item.t === cat);
+    currentQuestion = list[Math.floor(Math.random() * list.length)];
+    
+    document.getElementById('questionText').innerText = mode === 'toCode' ? currentQuestion.n : currentQuestion.c;
+    
+    let options = [currentQuestion];
+    while(options.length < 4) {
+        let randomItem = data[Math.floor(Math.random() * data.length)];
+        if(!options.find(o => o.c === randomItem.c)) options.push(randomItem);
+    }
+    options.sort(() => Math.random() - 0.5);
+    
+    const optionsDiv = document.getElementById('options');
+    optionsDiv.innerHTML = '';
+    options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = mode === 'toCode' ? opt.c : opt.n;
+        btn.onclick = () => checkAnswer(btn, opt.c === currentQuestion.c);
+        optionsDiv.appendChild(btn);
+    });
+}
+
+function checkAnswer(selectedBtn, isCorrect) {
+    if(isAnswering) return; // 連続クリック防止
+    isAnswering = true;
+
+    const mode = document.getElementById('modeSelect').value;
+    const correctText = mode === 'toCode' ? currentQuestion.c : currentQuestion.n;
+    const msgArea = document.getElementById('resultMsg');
+
+    // すべてのボタンを取得
+    const buttons = document.querySelectorAll('.option-btn');
+    
+    if(isCorrect) {
+        selectedBtn.classList.add('correct');
+        msgArea.innerText = "○ 正解！";
+        msgArea.style.color = "#4CAF50";
+        score++;
+    } else {
+        selectedBtn.classList.add('wrong');
+        msgArea.innerText = `× 不正解（正解は ${correctText}）`;
+        msgArea.style.color = "#f44336";
+        score = 0;
+        
+        // 正解のボタンを強調する
+        buttons.forEach(btn => {
+            if(btn.innerText === correctText) btn.classList.add('correct');
+        });
+    }
+    
+    document.getElementById('scoreCount').innerText = score;
+
+    // 1.2秒後に次の問題へ
+    setTimeout(nextQuestion, 1200);
+}
+</script>
+</body>
+</html>
